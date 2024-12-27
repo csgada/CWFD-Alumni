@@ -22,3 +22,4 @@ settings = Settings()
 print(settings.is_feature_enabled('role_based_channel_access'))
 print(settings.toggle_feature('role_based_channel_access'))
 print(settings.is_feature_enabled('role_based_channel_access'))
+
