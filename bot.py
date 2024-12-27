@@ -13,7 +13,7 @@ client = discord.Client(intents=intents)
 
 
 
-### EVENT
+### EVENTS
 # event triggered when the bot is ready
 @client.event
 async def on_ready():
