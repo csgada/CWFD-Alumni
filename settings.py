@@ -18,7 +18,9 @@ class Settings:
         return self.feature_toggles.get(feature_name, False)
     
 
-settings = Settings()
-print(settings.is_feature_enabled('role_based_channel_access'))
-print(settings.toggle_feature('role_based_channel_access'))
-print(settings.is_feature_enabled('role_based_channel_access'))
+
+if __name__ == '__main__':
+    settings = Settings()
+    print(settings.is_feature_enabled('role_based_channel_access'))
+    print(settings.toggle_feature('role_based_channel_access'))
+    print(settings.is_feature_enabled('role_based_channel_access'))
