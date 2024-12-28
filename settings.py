@@ -4,6 +4,7 @@ class Settings:
         self.feature_toggles = {
             'role_based_channel_access': True,
             'logging': False,
+            'chatting': True,
         }
 
     def toggle_feature(self, feature_name):
