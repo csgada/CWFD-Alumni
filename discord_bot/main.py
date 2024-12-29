@@ -31,7 +31,6 @@ async def check_roles(member, required_roles):
 
 async def apply_role_based_channel_access(guild, member, role_channel_mapping):
     for channel_name, required_roles in role_channel_mapping.items():
-        print(channel_name, required_roles)
         channel = discord.utils.get(guild.channels, name=channel_name)
         if not channel:
             print(f'Channel {channel_name} not found')
@@ -45,14 +44,20 @@ async def apply_role_based_channel_access(guild, member, role_channel_mapping):
             print(f'Removed {member.name} from {channel_name}')
 
 async def add_alumni_role(member, guild):
-    alumni_role = discord.utils.get(guild.roles, names='Alumni')
-    if (discord.utils.get(member.roles, names='Recent Alumni')) or (discord.utils.get(guild.roles, names='Heritage Alumni')):
+    alumni_role = discord.utils.get(guild.roles, name='Alumni')
+    if (discord.utils.get(member.roles, name='Recent Alumni')) or (discord.utils.get(guild.roles, name='Heritage Alumni')):
         await member.add_roles(alumni_role)
         print(f'Added Alumni role to {member.name}')
     else:
         await member.remove_roles(alumni_role)
     
-
+async def sync_on_ready():
+    print(f'Starting sync...\n')
+    for member in bot.get_all_members():
+        await add_alumni_role(member, member.guild)
+        await apply_role_based_channel_access(member.guild, member, role_channel_mapping)
+    print(f'\nSync complete.')
+    
 
 ### COMMANDS
 
@@ -63,11 +68,7 @@ async def add_alumni_role(member, guild):
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user}')
-    print(f'Starting sync...\n')
-    for member in bot.get_all_members():
-        add_alumni_role(member, member.guild)
-        await apply_role_based_channel_access(member.guild, member, role_channel_mapping)
-    print(f'\nSync complete.')
+    await sync_on_ready()
 
 # event triggered when a message is sent
 @bot.event
@@ -102,7 +103,7 @@ async def on_member_update(before,after):
         # before_roles = [role.name for role in before.roles]
         # after_roles = [role.name for role in after.roles]
 
-        add_alumni_role(after, after.guild)
+        await add_alumni_role(after, after.guild)
         await apply_role_based_channel_access(after.guild, after, role_channel_mapping)
 
 ### RUN THE BOT
