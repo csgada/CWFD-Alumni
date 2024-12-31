@@ -1,10 +1,12 @@
 import discord
 from discord.ext import commands
+import os
+import ollama
 from settings import Settings
 
-# read token from external txt file
-with open('/Users/carsongada/Stuff/Bot tokens/token.txt', 'r') as f:
-    token = f.read()
+# read tokens from env
+DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
+OLLAMA_API_KEY = os.getenv('OLLAMA_API_KEY')
 
 # initialize bot and settings
 intents = discord.Intents.default() # initialize intents (permissions)
@@ -13,6 +15,7 @@ intents.guilds = True # enable reading guild list
 intents.message_content = True # enable reading message content
 bot = commands.Bot(command_prefix='$', intents=intents) # create a bot instance
 settings = Settings() # create a settings object
+ollama_client = ollama.Client(OLLAMA_API_KEY) # create an OLLAMA client
 
 role_channel_mapping = {
     'alumni-fifers': ('Alumni', 'Fifer'),
@@ -59,7 +62,13 @@ async def sync_on_ready():
     print(f'\nSync complete.')
     
 
-### COMMANDS
+# ### COMMANDS
+# @bot.command(name='hello')
+# async def ollama(ctx, *, user_input):
+
+#     try:
+#         response = ollama_client.get_response(user_input)
+#         await ctx.send(response)
 
 
 
@@ -107,4 +116,4 @@ async def on_member_update(before,after):
         await apply_role_based_channel_access(after.guild, after, role_channel_mapping)
 
 ### RUN THE BOT
-bot.run(token, reconnect=True) # run the bot with the token
+bot.run(DISCORD_TOKEN, reconnect=True) # run the bot with the token
