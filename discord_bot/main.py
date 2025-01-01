@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 import os
-from ollama import AsyncClient
+import ollama_integration
 from settings import Settings
 
 # read tokens from env
@@ -63,17 +63,10 @@ async def sync_on_ready():
 
 ### COMMANDS
 @bot.command()
-async def chat(ctx):
-    ''' Talk a message to the Ollama API. '''
+async def ollama(ctx):
+    ''' Talk to the Ollama API. '''
     if settings.is_feature_enabled('ollama'):
-        try:
-            message = {'role': 'user',
-                    'content': ctx.message.content[7:]
-            }
-            response = await AsyncClient().chat(model='llama3.1:8b', messages=[message])
-            await ctx.send(response['message']['content'])
-        except Exception as e:
-            await ctx.send(f'Error: message not sent. Error message: {e}')
+        await ollama_integration.ollama_command(ctx)
     else:
         await ctx.send('Ollama feature is disabled.')
 
