@@ -63,20 +63,31 @@ async def sync_on_ready():
 
 ### COMMANDS
 @bot.command()
-async def ollama(ctx):
-    try:
-        message = {'role': 'user',
-                'content': ctx.message.content[7:]
-        }
-        response = await AsyncClient().chat(model='llama3.1:8b', messages=[message])
-        await ctx.send(response['message']['content'])
-    except Exception as e:
-        await ctx.send(f'Error: message not sent. Error message: {e}')
+async def chat(ctx):
+    ''' Talk a message to the Ollama API. '''
+    if settings.is_feature_enabled('ollama'):
+        try:
+            message = {'role': 'user',
+                    'content': ctx.message.content[7:]
+            }
+            response = await AsyncClient().chat(model='llama3.1:8b', messages=[message])
+            await ctx.send(response['message']['content'])
+        except Exception as e:
+            await ctx.send(f'Error: message not sent. Error message: {e}')
+    else:
+        await ctx.send('Ollama feature is disabled.')
 
 @bot.command()
 async def toggle_feature(ctx, feature_name):
+    ''' Toggle a feature on or off. '''
     response = settings.toggle_feature(feature_name)
     await ctx.send(response)
+
+@bot.command()
+async def ping(ctx, feature_name):
+    ''' Check if the bot is online. '''
+    await ctx.send('Pong!')
+
 
 
 ### EVENTS
@@ -111,9 +122,10 @@ async def on_message(message):
         # easter egg 4
         elif message.content.lower() == 'shucky ducky':
             await message.channel.send("QUACK QUACK!")
+    else:
+        print('Easter eggs are disabled.')
 
-    if settings.is_feature_enabled('ollama'):
-        await bot.process_commands(message)
+    await bot.process_commands(message)
 
 
 # event triggered when a member gets updated
