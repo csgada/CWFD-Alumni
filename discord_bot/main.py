@@ -1,21 +1,19 @@
 import discord
 from discord.ext import commands
 import os
-import ollama
+from ollama import AsyncClient
 from settings import Settings
 
 # read tokens from env
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
-OLLAMA_API_KEY = os.getenv('OLLAMA_API_KEY')
 
 # initialize bot and settings
 intents = discord.Intents.default() # initialize intents (permissions)
 intents.members = True # enable reading member list
 intents.guilds = True # enable reading guild list
 intents.message_content = True # enable reading message content
-bot = commands.Bot(command_prefix='$', intents=intents) # create a bot instance
+bot = commands.Bot(command_prefix='!', intents=intents) # create a bot instance
 settings = Settings() # create a settings object
-ollama_client = ollama.Client(OLLAMA_API_KEY) # create an OLLAMA client
 
 role_channel_mapping = {
     'alumni-fifers': ('Alumni', 'Fifer'),
@@ -29,7 +27,7 @@ role_channel_mapping = {
 ### FUNCTIONS
 async def check_roles(member, required_roles):
     user_roles = [role.name for role in member.roles]
-    print(f'\nUser roles: {user_roles}')
+    # print(f'\nUser roles: {user_roles}')
     return all(role in user_roles for role in required_roles)
 
 async def apply_role_based_channel_access(guild, member, role_channel_mapping):
@@ -41,16 +39,16 @@ async def apply_role_based_channel_access(guild, member, role_channel_mapping):
 
         if await check_roles(member, required_roles):
             await channel.set_permissions(member, view_channel=True)
-            print(f'Added {member.name} to {channel_name}')
+            # print(f'Added {member.name} to {channel_name}')
         else:
             await channel.set_permissions(member, overwrite=None)
-            print(f'Removed {member.name} from {channel_name}')
+            # print(f'Removed {member.name} from {channel_name}')
 
 async def add_alumni_role(member, guild):
     alumni_role = discord.utils.get(guild.roles, name='Alumni')
     if (discord.utils.get(member.roles, name='Recent Alumni')) or (discord.utils.get(guild.roles, name='Heritage Alumni')):
         await member.add_roles(alumni_role)
-        print(f'Added Alumni role to {member.name}')
+        # print(f'Added Alumni role to {member.name}')
     else:
         await member.remove_roles(alumni_role)
     
@@ -59,16 +57,37 @@ async def sync_on_ready():
     for member in bot.get_all_members():
         await add_alumni_role(member, member.guild)
         await apply_role_based_channel_access(member.guild, member, role_channel_mapping)
-    print(f'\nSync complete.')
-    
+    print(f'Sync complete.')
 
-# ### COMMANDS
-# @bot.command(name='hello')
-# async def ollama(ctx, *, user_input):
 
-#     try:
-#         response = ollama_client.get_response(user_input)
-#         await ctx.send(response)
+
+### COMMANDS
+@bot.command(pass_context=True, name='bust')
+async def hello(ctx):
+    print('Command invoked')
+    await ctx.send(f'Hello!')
+
+@bot.command()
+async def foo(ctx, arg):
+    await ctx.send(arg)
+
+
+
+'''@bot.command()
+async def test(ctx):
+    print('Command invoked')
+    message = {'role': 'user',
+               'content': ctx.content
+    }
+    async with AsyncClient() as OllamaClient:
+        response = await OllamaClient().chat(model='llama3.1:8b', messages=[message])
+    await ctx.send(response.get('response'))
+
+@bot.command()
+async def add(ctx, left: int, right: int):
+    print('Command invoked')
+    """Adds two numbers together."""
+    await ctx.send(left + right)'''
 
 
 
@@ -114,6 +133,8 @@ async def on_member_update(before,after):
 
         await add_alumni_role(after, after.guild)
         await apply_role_based_channel_access(after.guild, after, role_channel_mapping)
+
+
 
 ### RUN THE BOT
 bot.run(DISCORD_TOKEN, reconnect=True) # run the bot with the token
