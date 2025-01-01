@@ -64,13 +64,19 @@ async def sync_on_ready():
 ### COMMANDS
 @bot.command()
 async def ollama(ctx):
-    print('Command invoked')
-    message = {'role': 'user',
-               'content': ctx.message.content[7:]
-    }
-    response = await AsyncClient().chat(model='llama3.1:8b', messages=[message])
-    await ctx.send(response['message']['content'])
+    try:
+        message = {'role': 'user',
+                'content': ctx.message.content[7:]
+        }
+        response = await AsyncClient().chat(model='llama3.1:8b', messages=[message])
+        await ctx.send(response['message']['content'])
+    except Exception as e:
+        await ctx.send(f'Error: message not sent. Error message: {e}')
 
+@bot.command()
+async def toggle_feature(ctx, feature_name):
+    response = settings.toggle_feature(feature_name)
+    await ctx.send(response)
 
 
 ### EVENTS
@@ -100,12 +106,14 @@ async def on_message(message):
         # easter egg 3
         elif message.content.lower() == 'who likes to hear his name in a song?':
             await message.channel.send("LANCE, LANCE, LANCE!")
+            await message.channel.send('https://youtu.be/v6eAe8cID94?si=FPh337BCapEOOEZA')
 
         # easter egg 4
         elif message.content.lower() == 'shucky ducky':
             await message.channel.send("QUACK QUACK!")
 
-    await bot.process_commands(message)
+    if settings.is_feature_enabled('ollama'):
+        await bot.process_commands(message)
 
 
 # event triggered when a member gets updated
