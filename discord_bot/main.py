@@ -62,32 +62,14 @@ async def sync_on_ready():
 
 
 ### COMMANDS
-@bot.command(pass_context=True, name='bust')
-async def hello(ctx):
-    print('Command invoked')
-    await ctx.send(f'Hello!')
-
 @bot.command()
-async def foo(ctx, arg):
-    await ctx.send(arg)
-
-
-
-'''@bot.command()
-async def test(ctx):
+async def ollama(ctx):
     print('Command invoked')
     message = {'role': 'user',
-               'content': ctx.content
+               'content': ctx.message.content[7:]
     }
-    async with AsyncClient() as OllamaClient:
-        response = await OllamaClient().chat(model='llama3.1:8b', messages=[message])
-    await ctx.send(response.get('response'))
-
-@bot.command()
-async def add(ctx, left: int, right: int):
-    print('Command invoked')
-    """Adds two numbers together."""
-    await ctx.send(left + right)'''
+    response = await AsyncClient().chat(model='llama3.1:8b', messages=[message])
+    await ctx.send(response['message']['content'])
 
 
 
@@ -101,27 +83,30 @@ async def on_ready():
 # event triggered when a message is sent
 @bot.event
 async def on_message(message):
-    if settings.is_feature_enabled('chatting'):
+    if settings.is_feature_enabled('easter_eggs'):
         # ignore messages by the bot itself
         if message.author == bot.user:
             return
         
         ### respond to specific messages
         # easter egg 1
-        if message.content.lower() == 'whats the magic number?':
+        elif message.content.lower() == 'whats the magic number?':
             await message.channel.send('SIR, THE MAGIC NUMBER IS: 757-220-7350, SIR!')
         
         # easter egg 2
-        if message.content.lower() == 'what makes the grass grow?':
+        elif message.content.lower() == 'what makes the grass grow?':
             await message.channel.send("BLOOD, BLOOD, BRIGHT RED BLOOD!")
 
         # easter egg 3
-        if message.content.lower() == 'who likes to hear his name in a song?':
+        elif message.content.lower() == 'who likes to hear his name in a song?':
             await message.channel.send("LANCE, LANCE, LANCE!")
 
         # easter egg 4
-        if message.content.lower() == 'shucky ducky':
+        elif message.content.lower() == 'shucky ducky':
             await message.channel.send("QUACK QUACK!")
+
+    await bot.process_commands(message)
+
 
 # event triggered when a member gets updated
 @bot.event

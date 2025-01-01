@@ -4,7 +4,7 @@ class Settings:
         self.feature_toggles = {
             'role_based_channel_access': True,
             'logging': False,
-            'chatting': True,
+            'easter_eggs': True,
             'ollama': True,
         }
 
