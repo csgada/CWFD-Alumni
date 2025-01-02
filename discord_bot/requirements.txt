@@ -1,2 +1,4 @@
 discord.py==2.4.0
-ollama
+ollama==0.4.5
+rapidfuzz==3.11.0
+pandas==2.2.3

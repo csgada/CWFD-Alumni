@@ -3,6 +3,7 @@ from discord.ext import commands
 import os
 import ollama_integration
 from settings import Settings
+from music_retrieval import music_request_retrieval
 
 # read tokens from env
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
@@ -81,6 +82,27 @@ async def ping(ctx, feature_name):
     ''' Check if the bot is online. '''
     await ctx.send('Pong!')
 
+@bot.command()
+async def tune(ctx, instrument: str, *, tune_name: str):
+    ''' Command to request a song. Can only be used in music-request channels. '''
+    if settings.is_feature_enabled('music_requests'):
+        if ctx.channel.name == 'music-requests':
+            try:
+                excel_path = './Master List.xlsx'
+
+                file_path = music_request_retrieval(excel_path, tune_name, instrument)
+
+                if not file_path:
+                    await ctx.send(f"Sorry, I couldn't find a suitable file for {tune_name} with instrument {instrument}.")
+                    return
+                
+                await ctx.send(f'Found it! Here is the sheet music for {tune_name}: ')
+                await ctx.send(file=discord.File(file_path))
+
+            except Exception as e:
+                await ctx.send(f'Error: {e}')
+    else:
+        await ctx.send('Music requests are disabled.')
 
 
 ### EVENTS

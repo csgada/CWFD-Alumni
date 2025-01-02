@@ -6,6 +6,7 @@ class Settings:
             'logging': False,
             'easter_eggs': True,
             'ollama': True,
+            'music_requests': False,
         }
 
     def toggle_feature(self, feature_name):
