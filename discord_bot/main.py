@@ -66,7 +66,7 @@ async def sync_on_ready():
 async def ollama(ctx):
     ''' Talk to the Ollama API. '''
     if settings.is_feature_enabled('ollama'):
-        await ollama_integration.ollama_command(ctx)
+        await ollama_integration.ollama_single_chat(ctx)
     else:
         await ctx.send('Ollama feature is disabled.')
 
