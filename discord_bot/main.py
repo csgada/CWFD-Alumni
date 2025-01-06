@@ -134,9 +134,9 @@ async def on_raw_reaction_add(payload):
         return
 
     # Check if the payload has a valid guild_id
-    if payload.guild_id is None:
+    if payload.guild_id is None:  # Reaction in DM
         print(f"Reaction added in DM, processing for role assignment: {payload}")
-        
+
         # Map the emoji to the role name
         role_mapping = {
             '🎵': 'Fifer',
@@ -146,10 +146,20 @@ async def on_raw_reaction_add(payload):
 
         if str(payload.emoji) in role_mapping:
             role_name = role_mapping[str(payload.emoji)]
-            # Store the user's role preference
-            user_role_preferences[payload.user_id] = role_name
+            user_role_preferences[payload.user_id] = role_name  # Store the preference
             print(f"Stored role preference for user {payload.user_id}: {role_name}")
-        return  # Exit after processing DM reaction
+
+            # Try assigning the role if the user is already in the server
+            for guild in bot.guilds:
+                member = guild.get_member(payload.user_id)
+                if member:
+                    role = discord.utils.get(guild.roles, name=role_name)
+                    if role:
+                        await member.add_roles(role)
+                        print(f"Assigned {role_name} role to {member.name} in {guild.name}.")
+                    else:
+                        print(f"Role {role_name} not found in guild {guild.name}.")
+            return  # Exit after processing DM reaction
 
     # Continue with the existing logic for guild reactions
     guild = bot.get_guild(payload.guild_id)
