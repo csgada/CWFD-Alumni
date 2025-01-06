@@ -18,4 +18,5 @@ async def welcome_message(member, discord):
     await message.add_reaction(':regional_indicator_b:')
     await message.add_reaction(':regional_indicator_c:')
 
-async def on_member_join(member, discord):
+async def remove_reaction_role():
+    pass
