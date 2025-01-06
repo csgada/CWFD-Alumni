@@ -26,6 +26,9 @@ role_channel_mapping = {
     'srcorp-bassdrums': ('Senior Corp', 'Bass Drummer'),
 }
 
+# Dictionary to store user role preferences
+user_role_preferences = {}
+
 ### FUNCTIONS
 async def check_roles(member, required_roles):
     user_roles = [role.name for role in member.roles]
@@ -59,7 +62,23 @@ async def sync_on_ready():
     for member in bot.get_all_members():
         await add_alumni_role(member, member.guild)
         await apply_role_based_channel_access(member.guild, member, role_channel_mapping)
+    # Assign roles based on stored preferences
+    await assign_roles_based_on_preferences(member.guild)
     print(f'Sync complete.')
+
+# New function to assign roles based on stored preferences
+async def assign_roles_based_on_preferences(guild):
+    for user_id, role_name in user_role_preferences.items():
+        member = guild.get_member(user_id)
+        if member:
+            role = discord.utils.get(guild.roles, name=role_name)
+            if role:
+                await member.add_roles(role)
+                print(f"Assigned {role_name} role to {member.name} based on stored preference.")
+            else:
+                print(f"Role {role_name} not found in guild for user {user_id}.")
+        else:
+            print(f"Member with ID {user_id} not found in guild.")
 
 
 
@@ -114,17 +133,36 @@ async def on_raw_reaction_add(payload):
     if payload.user_id == bot.user.id:
         return
 
-    channel = await bot.fetch_channel(payload.channel_id)
-    if not isinstance(channel, discord.DMChannel):
-        return
+    # Check if the payload has a valid guild_id
+    if payload.guild_id is None:
+        print(f"Reaction added in DM, processing for role assignment: {payload}")
+        
+        # Map the emoji to the role name
+        role_mapping = {
+            '🎵': 'Fifer',
+            '🥁': 'Drummer',
+            '📀': 'Bass Drummer'
+        }
 
-    message = await channel.fetch_message(payload.message_id)
-    if message.author != bot.user:
-        return
+        if str(payload.emoji) in role_mapping:
+            role_name = role_mapping[str(payload.emoji)]
+            # Store the user's role preference
+            user_role_preferences[payload.user_id] = role_name
+            print(f"Stored role preference for user {payload.user_id}: {role_name}")
+        return  # Exit after processing DM reaction
 
+    # Continue with the existing logic for guild reactions
     guild = bot.get_guild(payload.guild_id)
+    if guild is None:
+        print(f"Guild not found for payload: {payload}")
+        return  # Exit if guild is not found
+
     member = guild.get_member(payload.user_id)
-    
+    if member is None:
+        print(f"Member not found for user ID: {payload.user_id}")
+        return  # Exit if member is not found
+
+    # Existing logic for guild reactions
     role_mapping = {
         '🎵': 'Fifer',
         '🥁': 'Drummer',
