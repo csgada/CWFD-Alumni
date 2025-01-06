@@ -161,33 +161,6 @@ async def on_raw_reaction_add(payload):
                         print(f"Role {role_name} not found in guild {guild.name}.")
             return  # Exit after processing DM reaction
 
-    # Continue with the existing logic for guild reactions
-    guild = bot.get_guild(payload.guild_id)
-    if guild is None:
-        print(f"Guild not found for payload: {payload}")
-        return  # Exit if guild is not found
-
-    member = guild.get_member(payload.user_id)
-    if member is None:
-        print(f"Member not found for user ID: {payload.user_id}")
-        return  # Exit if member is not found
-
-    # Existing logic for guild reactions
-    role_mapping = {
-        '🎵': 'Fifer',
-        '🥁': 'Drummer',
-        '📀': 'Bass Drummer'
-    }
-
-    if str(payload.emoji) in role_mapping:
-        role_name = role_mapping[str(payload.emoji)]
-        role = discord.utils.get(guild.roles, name=role_name)
-        if role:
-            await member.add_roles(role)
-            await message.delete()
-            await channel.send(f"You've been assigned the {role_name} role!")
-            await apply_role_based_channel_access(guild, member, role_channel_mapping)
-
 # event triggered when a message is sent
 @bot.event
 async def on_message(message):
