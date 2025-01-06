@@ -12,8 +12,10 @@ intents = discord.Intents.default() # initialize intents (permissions)
 intents.members = True # enable reading member list
 intents.guilds = True # enable reading guild list
 intents.message_content = True # enable reading message content
+intents.reactions = True # enable reading reactions
 bot = commands.Bot(command_prefix='!', intents=intents) # create a bot instance
 settings = Settings() # create a settings object
+
 
 role_channel_mapping = {
     'alumni-fifers': ('Alumni', 'Fifer'),
@@ -89,6 +91,54 @@ async def ping(ctx, feature_name):
 async def on_ready():
     print(f'Logged in as {bot.user}')
     await sync_on_ready()
+
+# event triggered when a new member joins
+@bot.event
+async def on_member_join(member):
+    welcome_message = ("Welcome to the server! Please react with:\n"
+                      "🎵 if you're a Fifer\n"
+                      "🥁 if you're a Drummer\n"
+                      "📀 if you're a Bass Drummer")
+    
+    try:
+        dm_channel = await member.create_dm()
+        message = await dm_channel.send(welcome_message)
+        await message.add_reaction('🎵')
+        await message.add_reaction('🥁')
+        await message.add_reaction('📀')
+    except discord.Forbidden:
+        print(f"Couldn't send DM to {member.name}")
+
+@bot.event
+async def on_raw_reaction_add(payload):
+    if payload.user_id == bot.user.id:
+        return
+
+    channel = await bot.fetch_channel(payload.channel_id)
+    if not isinstance(channel, discord.DMChannel):
+        return
+
+    message = await channel.fetch_message(payload.message_id)
+    if message.author != bot.user:
+        return
+
+    guild = bot.get_guild(payload.guild_id)
+    member = guild.get_member(payload.user_id)
+    
+    role_mapping = {
+        '🎵': 'Fifer',
+        '🥁': 'Drummer',
+        '📀': 'Bass Drummer'
+    }
+
+    if str(payload.emoji) in role_mapping:
+        role_name = role_mapping[str(payload.emoji)]
+        role = discord.utils.get(guild.roles, name=role_name)
+        if role:
+            await member.add_roles(role)
+            await message.delete()
+            await channel.send(f"You've been assigned the {role_name} role!")
+            await apply_role_based_channel_access(guild, member, role_channel_mapping)
 
 # event triggered when a message is sent
 @bot.event
