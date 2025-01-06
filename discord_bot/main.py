@@ -13,6 +13,7 @@ intents = discord.Intents.default() # initialize intents (permissions)
 intents.members = True # enable reading member list
 intents.guilds = True # enable reading guild list
 intents.message_content = True # enable reading message content
+intents.reactions = True # enable reading reactions
 bot = commands.Bot(command_prefix='!', intents=intents) # create a bot instance
 settings = Settings() # create a settings object
 
@@ -79,7 +80,7 @@ async def toggle_feature(ctx, feature_name):
 
 @bot.command()
 async def ping(ctx, feature_name):
-    ''' Check if the bot is online. '''
+    ''' Check if the bot is functioning as intended. '''
     await ctx.send('Pong!')
 
 @bot.command()
