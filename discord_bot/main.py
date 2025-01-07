@@ -17,6 +17,7 @@ intents.reactions = True # enable reading reactions
 bot = commands.Bot(command_prefix='!', intents=intents) # create a bot instance
 settings = Settings() # create a settings object
 
+
 role_channel_mapping = {
     'alumni-fifers': ('Alumni', 'Fifer'),
     'alumni-drummers': ('Alumni', 'Drummer'),
@@ -25,6 +26,9 @@ role_channel_mapping = {
     'srcorp-drummers': ('Senior Corp', 'Drummer'),
     'srcorp-bassdrums': ('Senior Corp', 'Bass Drummer'),
 }
+
+# Dictionary to store user role preferences
+user_role_preferences = {}
 
 ### FUNCTIONS
 async def check_roles(member, required_roles):
@@ -59,7 +63,23 @@ async def sync_on_ready():
     for member in bot.get_all_members():
         await add_alumni_role(member, member.guild)
         await apply_role_based_channel_access(member.guild, member, role_channel_mapping)
+    # Assign roles based on stored preferences
+    await assign_roles_based_on_preferences(member.guild)
     print(f'Sync complete.')
+
+# New function to assign roles based on stored preferences
+async def assign_roles_based_on_preferences(guild):
+    for user_id, role_name in user_role_preferences.items():
+        member = guild.get_member(user_id)
+        if member:
+            role = discord.utils.get(guild.roles, name=role_name)
+            if role:
+                await member.add_roles(role)
+                print(f"Assigned {role_name} role to {member.name} based on stored preference.")
+            else:
+                print(f"Role {role_name} not found in guild for user {user_id}.")
+        else:
+            print(f"Member with ID {user_id} not found in guild.")
 
 
 
@@ -112,6 +132,56 @@ async def tune(ctx, instrument: str, *, tune_name: str):
 async def on_ready():
     print(f'Logged in as {bot.user}')
     await sync_on_ready()
+
+# event triggered when a new member joins
+@bot.event
+async def on_member_join(member):
+    welcome_message = ("Welcome to the server! Please react with:\n"
+                      "🎵 if you're a Fifer\n"
+                      "🥁 if you're a Drummer\n"
+                      "📀 if you're a Bass Drummer")
+    
+    try:
+        dm_channel = await member.create_dm()
+        message = await dm_channel.send(welcome_message)
+        await message.add_reaction('🎵')
+        await message.add_reaction('🥁')
+        await message.add_reaction('📀')
+    except discord.Forbidden:
+        print(f"Couldn't send DM to {member.name}")
+
+@bot.event
+async def on_raw_reaction_add(payload):
+    if payload.user_id == bot.user.id:
+        return
+
+    # Check if the payload has a valid guild_id
+    if payload.guild_id is None:  # Reaction in DM
+        print(f"Reaction added in DM, processing for role assignment: {payload}")
+
+        # Map the emoji to the role name
+        role_mapping = {
+            '🎵': 'Fifer',
+            '🥁': 'Drummer',
+            '📀': 'Bass Drummer'
+        }
+
+        if str(payload.emoji) in role_mapping:
+            role_name = role_mapping[str(payload.emoji)]
+            user_role_preferences[payload.user_id] = role_name  # Store the preference
+            print(f"Stored role preference for user {payload.user_id}: {role_name}")
+
+            # Try assigning the role if the user is already in the server
+            for guild in bot.guilds:
+                member = guild.get_member(payload.user_id)
+                if member:
+                    role = discord.utils.get(guild.roles, name=role_name)
+                    if role:
+                        await member.add_roles(role)
+                        print(f"Assigned {role_name} role to {member.name} in {guild.name}.")
+                    else:
+                        print(f"Role {role_name} not found in guild {guild.name}.")
+            return  # Exit after processing DM reaction
 
 # event triggered when a message is sent
 @bot.event
