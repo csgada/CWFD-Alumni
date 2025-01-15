@@ -19,8 +19,3 @@ class Settings:
     def is_feature_enabled(self, feature_name):
         ''' Check if a feature is enabled. '''
         return self.feature_toggles.get(feature_name, False)
-    
-
-
-if __name__ == '__main__':
-    pass

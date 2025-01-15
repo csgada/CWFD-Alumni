@@ -2,8 +2,11 @@ import discord
 from discord.ext import commands
 import os
 import ollama_integration
+
 from settings import Settings
 from music_retrieval import music_request_retrieval
+import role_automation
+import welcome_message
 
 # read tokens from env
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
@@ -16,70 +19,6 @@ intents.message_content = True # enable reading message content
 intents.reactions = True # enable reading reactions
 bot = commands.Bot(command_prefix='!', intents=intents) # create a bot instance
 settings = Settings() # create a settings object
-
-
-role_channel_mapping = {
-    'alumni-fifers': ('Alumni', 'Fifer'),
-    'alumni-drummers': ('Alumni', 'Drummer'),
-    'alumni-bassdrums': ('Alumni', 'Bass Drummer'),
-    'srcorp-fifers': ('Senior Corp', 'Fifer'),
-    'srcorp-drummers': ('Senior Corp', 'Drummer'),
-    'srcorp-bassdrums': ('Senior Corp', 'Bass Drummer'),
-}
-
-# Dictionary to store user role preferences
-user_role_preferences = {}
-
-### FUNCTIONS
-async def check_roles(member, required_roles):
-    user_roles = [role.name for role in member.roles]
-    # print(f'\nUser roles: {user_roles}')
-    return all(role in user_roles for role in required_roles)
-
-async def apply_role_based_channel_access(guild, member, role_channel_mapping):
-    for channel_name, required_roles in role_channel_mapping.items():
-        channel = discord.utils.get(guild.channels, name=channel_name)
-        if not channel:
-            print(f'Channel {channel_name} not found')
-            continue
-
-        if await check_roles(member, required_roles):
-            await channel.set_permissions(member, view_channel=True)
-            # print(f'Added {member.name} to {channel_name}')
-        else:
-            await channel.set_permissions(member, overwrite=None)
-            # print(f'Removed {member.name} from {channel_name}')
-
-async def add_alumni_role(member, guild):
-    alumni_role = discord.utils.get(guild.roles, name='Alumni')
-    if (discord.utils.get(member.roles, name='Recent Alumni')) or (discord.utils.get(guild.roles, name='Heritage Alumni')):
-        await member.add_roles(alumni_role)
-        # print(f'Added Alumni role to {member.name}')
-    else:
-        await member.remove_roles(alumni_role)
-    
-async def sync_on_ready():
-    print(f'Starting sync...\n')
-    for member in bot.get_all_members():
-        await add_alumni_role(member, member.guild)
-        await apply_role_based_channel_access(member.guild, member, role_channel_mapping)
-    # Assign roles based on stored preferences
-    await assign_roles_based_on_preferences(member.guild)
-    print(f'Sync complete.')
-
-# New function to assign roles based on stored preferences
-async def assign_roles_based_on_preferences(guild):
-    for user_id, role_name in user_role_preferences.items():
-        member = guild.get_member(user_id)
-        if member:
-            role = discord.utils.get(guild.roles, name=role_name)
-            if role:
-                await member.add_roles(role)
-                print(f"Assigned {role_name} role to {member.name} based on stored preference.")
-            else:
-                print(f"Role {role_name} not found in guild for user {user_id}.")
-        else:
-            print(f"Member with ID {user_id} not found in guild.")
 
 
 
@@ -99,7 +38,7 @@ async def toggle_feature(ctx, feature_name):
     await ctx.send(response)
 
 @bot.command()
-async def ping(ctx, feature_name):
+async def ping(ctx):
     ''' Check if the bot is functioning as intended. '''
     await ctx.send('Pong!')
 
@@ -126,62 +65,27 @@ async def tune(ctx, instrument: str, *, tune_name: str):
         await ctx.send('Music requests are disabled.')
 
 
+
 ### EVENTS
 # event triggered when the bot is ready
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user}')
-    await sync_on_ready()
+    print(f'Starting sync...\n')
+    for member in bot.get_all_members():
+        await add_alumni_role(member, member.guild)
+        await apply_role_based_channel_access(member.guild, member, role_channel_mapping)
+    print(f'Sync complete.')
 
 # event triggered when a new member joins
 @bot.event
 async def on_member_join(member):
-    welcome_message = ("Welcome to the server! Please react with:\n"
-                      "🎵 if you're a Fifer\n"
-                      "🥁 if you're a Drummer\n"
-                      "📀 if you're a Bass Drummer")
-    
-    try:
-        dm_channel = await member.create_dm()
-        message = await dm_channel.send(welcome_message)
-        await message.add_reaction('🎵')
-        await message.add_reaction('🥁')
-        await message.add_reaction('📀')
-    except discord.Forbidden:
-        print(f"Couldn't send DM to {member.name}")
+    pass
 
 @bot.event
 async def on_raw_reaction_add(payload):
-    if payload.user_id == bot.user.id:
-        return
+    pass
 
-    # Check if the payload has a valid guild_id
-    if payload.guild_id is None:  # Reaction in DM
-        print(f"Reaction added in DM, processing for role assignment: {payload}")
-
-        # Map the emoji to the role name
-        role_mapping = {
-            '🎵': 'Fifer',
-            '🥁': 'Drummer',
-            '📀': 'Bass Drummer'
-        }
-
-        if str(payload.emoji) in role_mapping:
-            role_name = role_mapping[str(payload.emoji)]
-            user_role_preferences[payload.user_id] = role_name  # Store the preference
-            print(f"Stored role preference for user {payload.user_id}: {role_name}")
-
-            # Try assigning the role if the user is already in the server
-            for guild in bot.guilds:
-                member = guild.get_member(payload.user_id)
-                if member:
-                    role = discord.utils.get(guild.roles, name=role_name)
-                    if role:
-                        await member.add_roles(role)
-                        print(f"Assigned {role_name} role to {member.name} in {guild.name}.")
-                    else:
-                        print(f"Role {role_name} not found in guild {guild.name}.")
-            return  # Exit after processing DM reaction
 
 # event triggered when a message is sent
 @bot.event
