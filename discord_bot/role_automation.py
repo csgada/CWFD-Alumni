@@ -11,13 +11,12 @@ role_channel_mapping = {
 
 
 
-### Role Automation Functions
+### Alumni Role Automation Functions
 async def check_roles(member, required_roles):
     user_roles = [role.name for role in member.roles]
-    # print(f'\nUser roles: {user_roles}')
     return all(role in user_roles for role in required_roles)
 
-async def apply_role_based_channel_access(discord, guild, member, role_channel_mapping):
+async def apply_role_based_channel_access(discord, guild, member):
     for channel_name, required_roles in role_channel_mapping.items():
         channel = discord.utils.get(guild.channels, name=channel_name)
         if not channel:
@@ -44,20 +43,11 @@ async def add_alumni_role(discord, member, guild):
 ### Reaction Role Functions
 async def remove_reaction_role(discord, member, role_name):
     role = discord.utils.get(member.guild.roles, name=role_name)
-    if role:
+    if role in member.roles:
         await member.remove_roles(role)
-    else:
-        print(f"Role {role_name} not found.")
 
 async def add_reaction_role(discord, member, role_name):
     role = discord.utils.get(member.guild.roles, name=role_name)
-    if role:
+    if role not in member.roles:
         await member.add_roles(role)
-    else:
-        print(f"Role {role_name} not found.")
 
-
-
-# New function to assign roles based on stored preferences
-async def assign_roles_based_on_preferences(guild):
-    pass

@@ -6,7 +6,7 @@ import ollama_integration
 from settings import Settings
 from music_retrieval import music_request_retrieval
 import role_automation
-import welcome_message
+from welcome_message import send_welcome_message, handle_reaction_add
 
 # read tokens from env
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
@@ -73,19 +73,22 @@ async def on_ready():
     print(f'Logged in as {bot.user}')
     print(f'Starting sync...\n')
     for member in bot.get_all_members():
-        await add_alumni_role(member, member.guild)
-        await apply_role_based_channel_access(member.guild, member, role_channel_mapping)
+        await role_automation.add_alumni_role(discord, member, member.guild)
+        await role_automation.apply_role_based_channel_access(discord, member.guild, member)
     print(f'Sync complete.')
 
 # event triggered when a new member joins
 @bot.event
 async def on_member_join(member):
-    pass
+    await send_welcome_message(discord, member)
 
 @bot.event
 async def on_raw_reaction_add(payload):
-    pass
-
+    if payload.member.bot:
+        return  # Ignore bot reactions
+    guild = bot.get_guild(payload.guild_id)
+    member = guild.get_member(payload.user_id)
+    await handle_reaction_add(discord, member, payload.emoji)
 
 # event triggered when a message is sent
 @bot.event
@@ -126,8 +129,8 @@ async def on_member_update(before,after):
         # before_roles = [role.name for role in before.roles]
         # after_roles = [role.name for role in after.roles]
 
-        await add_alumni_role(after, after.guild)
-        await apply_role_based_channel_access(after.guild, after, role_channel_mapping)
+        await role_automation.add_alumni_role(discord, after, after.guild)
+        await role_automation.apply_role_based_channel_access(discord, after.guild, after)
 
 
 
