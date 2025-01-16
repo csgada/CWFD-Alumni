@@ -20,8 +20,6 @@ intents.reactions = True # enable reading reactions
 bot = commands.Bot(command_prefix='!', intents=intents) # create a bot instance
 settings = Settings() # create a settings object
 
-guild_name = 'my bot testing server'
-
 ### COMMANDS
 @bot.command()
 async def ollama(ctx):
@@ -72,8 +70,8 @@ async def tune(ctx, instrument: str, *, tune_name: str):
 async def on_ready():
     print(f'Logged in as {bot.user}')
     print(f'Starting sync...\n')
-    guild = discord.utils.get(bot.guilds, name=guild_name)
-    for member in guild.members:
+    bot.guild = discord.utils.get(bot.guilds, name='my bot testing server')
+    for member in bot.guild.members:
         await assign_alumni_role(discord, member.guild, member)
         await apply_role_based_channel_access(discord, member.guild, member)
     print(f'Sync complete.')
@@ -86,19 +84,20 @@ async def on_member_join(member):
 # event triggered when a reaction is added
 @bot.event
 async def on_raw_reaction_add(payload):
-    if payload.member == bot.user:
-        return  # Ignore bot reactions
-    ## add dmchannel check here
-    guild = discord.utils.get(bot.guilds, name=guild_name)
-    member = guild.get_member(payload.user_id)
-    await handle_reaction(discord, guild, member, payload)
+    if payload.user_id == bot.user.id:
+        return
+    channel = await bot.fetch_channel(payload.channel_id)
+    if isinstance(channel, discord.DMChannel):
+        guild = bot.guild
+        member = guild.get_member(payload.user_id)
+        await handle_reaction(discord, bot.guild, member, payload)
 
 # event triggered when a reaction is removed
 @bot.event
 async def on_raw_reaction_remove(payload):
     if payload.member == bot.user:
         return
-    guild = discord.utils.get(bot.guilds, name=guild_name)
+    guild = bot.guild
     member = guild.get_member(payload.user_id)
     await handle_reaction(discord, guild, member, payload, add_role=False)
 
