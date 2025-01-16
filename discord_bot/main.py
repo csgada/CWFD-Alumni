@@ -20,6 +20,8 @@ intents.reactions = True # enable reading reactions
 bot = commands.Bot(command_prefix='!', intents=intents) # create a bot instance
 settings = Settings() # create a settings object
 
+
+
 ### COMMANDS
 @bot.command()
 async def ollama(ctx):
@@ -27,13 +29,12 @@ async def ollama(ctx):
     if settings.is_feature_enabled('ollama'):
         await ollama_integration.ollama_single_chat(ctx)
     else:
-        await ctx.send('Ollama feature is disabled.')
+        await ctx.send('Ollama feature is disabled.') # will eventually add this to logging feature
 
 @bot.command()
 async def toggle_feature(ctx, feature_name):
     ''' Toggle a feature on or off. '''
-    response = settings.toggle_feature(feature_name)
-    await ctx.send(response)
+    await ctx.send(settings.toggle_feature(feature_name))
 
 @bot.command()
 async def ping(ctx):
@@ -79,29 +80,32 @@ async def on_ready():
 # event triggered when a new member joins
 @bot.event
 async def on_member_join(member):
-    await send_welcome_message(discord, member)
+    if settings.is_feature_enabled('welcome_message'):
+        await send_welcome_message(discord, member)
 
 # event triggered when a reaction is added
 @bot.event
 async def on_raw_reaction_add(payload):
-    if payload.user_id == bot.user.id:
-        return
-    channel = await bot.fetch_channel(payload.channel_id)
-    if isinstance(channel, discord.DMChannel):
-        guild = bot.guild
-        member = guild.get_member(payload.user_id)
-        await handle_reaction(discord, guild, member, payload)
+    if settings.is_feature_enabled('welcome_message'):
+        if payload.user_id == bot.user.id:
+            return
+        channel = await bot.fetch_channel(payload.channel_id)
+        if isinstance(channel, discord.DMChannel):
+            guild = bot.guild
+            member = guild.get_member(payload.user_id)
+            await handle_reaction(discord, guild, member, payload)
 
 # event triggered when a reaction is removed
 @bot.event
 async def on_raw_reaction_remove(payload):
-    if payload.member == bot.user:
-        return
-    channel = await bot.fetch_channel(payload.channel_id)
-    if isinstance(channel, discord.DMChannel):
-        guild = bot.guild
-        member = guild.get_member(payload.user_id)
-        await handle_reaction(discord, guild, member, payload, add_role=False)
+    if settings.is_feature_enabled('welcome_message'):
+        if payload.member == bot.user:
+            return
+        channel = await bot.fetch_channel(payload.channel_id)
+        if isinstance(channel, discord.DMChannel):
+            guild = bot.guild
+            member = guild.get_member(payload.user_id)
+            await handle_reaction(discord, guild, member, payload, add_role=False)
 
 # event triggered when a message is sent
 @bot.event

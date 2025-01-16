@@ -7,6 +7,7 @@ class Settings:
             'easter_eggs': True,
             'ollama': True,
             'music_requests': False,
+            'welcome_message': True,
         }
 
     def toggle_feature(self, feature_name):

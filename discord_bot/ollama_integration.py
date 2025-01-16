@@ -2,7 +2,7 @@ import asyncio
 from ollama import chat
 
 async def ollama_single_chat(ctx, model='llama3.1:8b'):
-    ''' Handles the Ollama API interaction. Single chat onll with streaming. '''
+    ''' Handles the Ollama API interaction. Single chat with streaming. '''
     try:
         message = {'role': 'user', 
                    'content': ctx.message.content[7:]
