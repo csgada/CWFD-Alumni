@@ -90,16 +90,18 @@ async def on_raw_reaction_add(payload):
     if isinstance(channel, discord.DMChannel):
         guild = bot.guild
         member = guild.get_member(payload.user_id)
-        await handle_reaction(discord, bot.guild, member, payload)
+        await handle_reaction(discord, guild, member, payload)
 
 # event triggered when a reaction is removed
 @bot.event
 async def on_raw_reaction_remove(payload):
     if payload.member == bot.user:
         return
-    guild = bot.guild
-    member = guild.get_member(payload.user_id)
-    await handle_reaction(discord, guild, member, payload, add_role=False)
+    channel = await bot.fetch_channel(payload.channel_id)
+    if isinstance(channel, discord.DMChannel):
+        guild = bot.guild
+        member = guild.get_member(payload.user_id)
+        await handle_reaction(discord, guild, member, payload, add_role=False)
 
 # event triggered when a message is sent
 @bot.event

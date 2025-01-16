@@ -1,3 +1,4 @@
 __pycache__/
 .DS_Store
 alumnenv/
+discord_bot/user_role_storage.json
