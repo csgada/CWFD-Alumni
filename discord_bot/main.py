@@ -5,8 +5,8 @@ import ollama_integration
 
 from settings import Settings
 from music_retrieval import music_request_retrieval
-import role_automation
-from welcome_message import send_welcome_message, handle_reaction_add
+from role_automation import assign_alumni_role, apply_role_based_channel_access
+from welcome_message import send_welcome_message, handle_reaction
 
 # read tokens from env
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
@@ -20,7 +20,7 @@ intents.reactions = True # enable reading reactions
 bot = commands.Bot(command_prefix='!', intents=intents) # create a bot instance
 settings = Settings() # create a settings object
 
-
+guild_name = 'my bot testing server'
 
 ### COMMANDS
 @bot.command()
@@ -72,9 +72,10 @@ async def tune(ctx, instrument: str, *, tune_name: str):
 async def on_ready():
     print(f'Logged in as {bot.user}')
     print(f'Starting sync...\n')
-    for member in bot.get_all_members():
-        await role_automation.add_alumni_role(discord, member, member.guild)
-        await role_automation.apply_role_based_channel_access(discord, member.guild, member)
+    guild = discord.utils.get(bot.guilds, name=guild_name)
+    for member in guild.members:
+        await assign_alumni_role(discord, member.guild, member)
+        await apply_role_based_channel_access(discord, member.guild, member)
     print(f'Sync complete.')
 
 # event triggered when a new member joins
@@ -82,13 +83,24 @@ async def on_ready():
 async def on_member_join(member):
     await send_welcome_message(discord, member)
 
+# event triggered when a reaction is added
 @bot.event
 async def on_raw_reaction_add(payload):
-    if payload.member.bot:
+    if payload.member == bot.user:
         return  # Ignore bot reactions
-    guild = bot.get_guild(payload.guild_id)
+    ## add dmchannel check here
+    guild = discord.utils.get(bot.guilds, name=guild_name)
     member = guild.get_member(payload.user_id)
-    await handle_reaction_add(discord, member, payload.emoji)
+    await handle_reaction(discord, guild, member, payload)
+
+# event triggered when a reaction is removed
+@bot.event
+async def on_raw_reaction_remove(payload):
+    if payload.member == bot.user:
+        return
+    guild = discord.utils.get(bot.guilds, name=guild_name)
+    member = guild.get_member(payload.user_id)
+    await handle_reaction(discord, guild, member, payload, add_role=False)
 
 # event triggered when a message is sent
 @bot.event
@@ -109,8 +121,7 @@ async def on_message(message):
 
         # easter egg 3
         elif message.content.lower() == 'who likes to hear his name in a song?':
-            await message.channel.send("LANCE, LANCE, LANCE!")
-            await message.channel.send('https://youtu.be/v6eAe8cID94?si=FPh337BCapEOOEZA')
+            await message.channel.send('LANCE, LANCE, LANCE!\nhttps://youtu.be/v6eAe8cID94?si=FPh337BCapEOOEZA')
 
         # easter egg 4
         elif message.content.lower() == 'shucky ducky':
@@ -121,6 +132,7 @@ async def on_message(message):
     await bot.process_commands(message)
 
 
+
 # event triggered when a member gets updated
 @bot.event
 async def on_member_update(before,after):
@@ -129,8 +141,8 @@ async def on_member_update(before,after):
         # before_roles = [role.name for role in before.roles]
         # after_roles = [role.name for role in after.roles]
 
-        await role_automation.add_alumni_role(discord, after, after.guild)
-        await role_automation.apply_role_based_channel_access(discord, after.guild, after)
+        await assign_alumni_role(discord, after.guild, after)
+        await apply_role_based_channel_access(discord, after.guild, after)
 
 
 
